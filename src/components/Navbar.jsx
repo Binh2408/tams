@@ -75,7 +75,7 @@ const Navbar = () => {
           />
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar
         <div className="hidden lg:flex justify-center items-center relative shadow-lg border border-green-300 rounded-full">
           <input
             type="search"
@@ -90,7 +90,7 @@ const Navbar = () => {
           >
             <FiSearch className="text-white" />
           </div>
-        </div>
+        </div> */}
 
         {/* Profile, Cart, Sign In */}
         <div className="flex items-center pr-3 font-semibold text-white">
@@ -164,6 +164,43 @@ const Navbar = () => {
                         Quản lí
                       </button>
                     )}
+
+{account.nameRole === "ROLE_HOUSEHOLD" && (
+                      <button
+                        onClick={() => {
+                          setIsPopupVisible(false);
+                          navigate("/dash");
+                        }}
+                        className="block w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-200"
+                      >
+                        Quản lí doanh thu
+                      </button>
+                    )}
+
+{account.nameRole === "ROLE_HOUSEHOLD" && (
+                      <button
+                        onClick={() => {
+                          setIsPopupVisible(false);
+                          navigate("/ordermanager");
+                        }}
+                        className="block w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-200"
+                      >
+                        Quản lí đặt hàng
+                      </button>
+                    )}
+
+{account.nameRole === "ROLE_HOUSEHOLD" && (
+                      <button
+                        onClick={() => {
+                          setIsPopupVisible(false);
+                          navigate("/findOrderById");
+                        }}
+                        className="block w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-200"
+                      >
+                        Doanh thu sản phẩm
+                      </button>
+                    )}
+
 
                     {account.nameRole === "ROLE_HOUSEHOLD" && (
                       <button

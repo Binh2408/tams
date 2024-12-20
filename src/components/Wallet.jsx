@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Filters from './Filters';
+import { toast, ToastContainer } from "react-toastify"; // Import react-toastify
+import "react-toastify/dist/ReactToastify.css"; // Import styles for toast notifications
 
 const Wallet = () => {
   const [wallet, setWallet] = useState(null);
@@ -62,6 +64,12 @@ const Wallet = () => {
   };
 
   const handleUpdate = async () => {
+    // Kiểm tra nếu có trường nào trống
+    if (!walletData.bankAccountNumber || !walletData.bankName || !walletData.registrationLocation) {
+      toast.error("Vui lòng điền đầy đủ thông tin.");
+      return; // Ngừng thực hiện nếu có trường trống
+    }
+  
     try {
       const response = await axios.put(
         'https://tams.azurewebsites.net/api/wallet/update',
@@ -72,27 +80,20 @@ const Wallet = () => {
           },
         }
       );
-      alert(response.data);
+  
+      // Thông báo thành công hoặc lỗi từ API
+      if (response.data === 'Wallet updated successfully.') {
+        toast.success('Cập nhật ví thành công.');
+      } else {
+        toast.error(response.data);
+      }
+  
       setEditMode(false);
       getWalletDetails();
     } catch (error) {
       setError('Lỗi khi cập nhật ví.');
     }
-  };
-
-  const handleDelete = async () => {
-    try {
-      const response = await axios.delete('https://tams.azurewebsites.net/api/wallet/delete', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      alert(response.data);
-      setWallet(null);
-    } catch (error) {
-      setError('Lỗi khi xóa ví.');
-    }
-  };
+  }; 
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -107,6 +108,17 @@ const Wallet = () => {
   return (
     <>
     <Filters />
+    <ToastContainer
+        position="bottom-left" // Hiển thị thông báo ở góc dưới bên trái
+        autoClose={3000} // Thời gian tự động đóng (ms)
+        hideProgressBar={false} // Hiển thị thanh tiến trình
+        newestOnTop={false} // Thông báo mới nhất không hiển thị trên cùng
+        closeOnClick // Đóng thông báo khi click
+        rtl={false} // Không dùng chế độ RTL
+        pauseOnFocusLoss // Tạm dừng khi mất tiêu điểm
+        draggable // Có thể kéo thông báo
+        pauseOnHover // Tạm dừng khi hover vào thông báo
+      />
     <div style={{
       display: 'flex',
       justifyContent: 'center',
@@ -202,7 +214,6 @@ const Wallet = () => {
             ) : (
               <div style={{ textAlign: 'center' }}>
                 <button onClick={() => setEditMode(true)} style={buttonStyle}>Chỉnh sửa</button>
-                <button onClick={handleDelete} style={deleteButtonStyle}>Xóa ví</button>
               </div>
             )}
           </div>

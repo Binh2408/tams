@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import ProductService from "../services/ProductService";
-import axios from "axios";
 import {
   apiGetPublicDistrict,
   apiGetPublicProvinces,
   apiGetPublicWard,
 } from "../services/address";
 import SellectAddress from "../components/SellectAddress";
+import { toast, ToastContainer } from "react-toastify"; // Import react-toastify
+import "react-toastify/dist/ReactToastify.css"; // Import styles for toast notifications
 const FarmerProductForm = ({ initialData = {}, onSave }) => {
   // Add address-related fields to the initial state
   const [formData, setFormData] = useState({
@@ -132,12 +133,6 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
       .catch((error) => {
         console.error("Lỗi khi tải danh sách loại sản phẩm:", error);
       });
-
-    // Gọi API để lấy danh sách tỉnh thành
-    // axios
-    //   .get(`${host}?depth=1`)
-    //   .then((response) => setProvinces(response.data));
-
     // Nếu là chỉnh sửa, lấy thông tin sản phẩm
     if (idProduct) {
       ProductService.getProductById(idProduct)
@@ -156,19 +151,6 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
             district: data.district || "",
             city: data.city || "", // Lưu tên thành phố
           });
-          // // Lấy danh sách quận huyện khi đã có tỉnh thành
-          // if (data.city) {
-          //   axios
-          //     .get(`${host}p/${data.city}?depth=2`)
-          //     .then((response) => setDistricts(response.data.districts));
-          // }
-
-          // // Lấy danh sách phường xã khi đã có quận huyện
-          // if (data.district) {
-          //   axios
-          //     .get(`${host}d/${data.district}?depth=2`)
-          //     .then((response) => setWards(response.data.wards));
-          // }
         })
         .catch((error) => {
           console.error("Lỗi khi tải thông tin sản phẩm:", error);
@@ -232,15 +214,9 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
     if (!validateForm()) return;
   
     // Lấy tên các địa lý từ ID
-    const wardName = wards?.find(
-      (item) => item.ward_id === formData.ward
-    )?.ward_name;
-    const districtName = districts?.find(
-      (item) => item.district_id === formData.district
-    )?.district_name;
-    const cityName = provinces?.find(
-      (item) => item.province_id === formData.city
-    )?.province_name;
+    const wardName = wards?.find((item) => item.ward_id === formData.ward)?.ward_name;
+    const districtName = districts?.find((item) => item.district_id === formData.district)?.district_name;
+    const cityName = provinces?.find((item) => item.province_id === formData.city)?.province_name;
   
     const formDataWithImage = new FormData();
     formDataWithImage.append("productName", formData.productName);
@@ -250,7 +226,7 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
     formDataWithImage.append("status", formData.status);
     formDataWithImage.append("idSubcategory", formData.idSubcategory);
     formDataWithImage.append("specificAddress", formData.specificAddress);
-    formDataWithImage.append("ward", wardName || formData.ward); // Nếu không tìm được tên thì dùng ID
+    formDataWithImage.append("ward", wardName || formData.ward);
     formDataWithImage.append("district", districtName || formData.district);
     formDataWithImage.append("city", cityName || formData.city);
     formDataWithImage.append("expirationDate", formData.expirationDate);
@@ -276,38 +252,67 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
         navigate("/productmanager");
       } else {
         const errorText = await response.text();
-        // Lọc thông báo lỗi giá để chỉ hiển thị phần thông báo quan trọng
-        if (errorText.includes("Giá tối thiểu")) {
-          // Chỉ hiển thị phần thông báo liên quan đến giá
-          const priceErrorMessage = errorText.replace("Failed to add product: ", "");
+        console.log(errorText)
   
-          // Cập nhật thông báo lỗi vào state
-          setErrors({
-            ...errors,
-            price: priceErrorMessage, // Lưu thông báo lỗi vào state
-          });
-  
-          // Hiển thị thông báo lỗi lên UI (có thể là alert hoặc thông báo trong form)
-          alert(priceErrorMessage); // Hoặc bạn có thể thay bằng việc hiển thị trực tiếp trên form
+        if (errorText.includes("Failed to add product")) {
+          // Kiểm tra và thay đổi thông báo giá lỗi thành thông báo tiếng Việt
+          if (errorText.includes("Price must be within")) {
+            // Lọc thông báo và thay đổi thành tiếng Việt
+            const match = errorText.match(/Price must be within (\d+) and (\d+)/);
+            if (match) {
+              const minPrice = match[1];
+              const maxPrice = match[2];
+              const priceErrorMessage = `Giá phải nằm trong khoảng từ ${minPrice} đến ${maxPrice}`;
+              setErrors({
+                ...errors,
+                price: priceErrorMessage, // Lưu thông báo lỗi vào state
+              });
+              toast.error(priceErrorMessage); // Hiển thị thông báo lỗi lên UI
+            }
+          }
         } else {
-          console.error("Lỗi API:", errorText);
+          toast.error("Lỗi API: " + errorText); // Hiển thị lỗi chung nếu không phải lỗi giá
         }
       }
     } catch (error) {
       console.error("Yêu cầu thất bại", error);
     }
   };
-  
 
   const styles = {
     formContainer: {
-      maxWidth: "600px",
-      margin: "0 auto",
+      maxWidth: "1200px",
+      margin: "50px 150px",
       padding: "20px",
       display: "grid",
-      gridTemplateColumns: "1fr",  // Keep the form as a single column for simplicity
+      gridTemplateColumns: "1fr 1fr",  // Keep the form as a single column for simplicity
+      gridTemplateAreas: `
+        "column1 column2"
+        "column1 column3"
+      `,
       gap: "20px",
       backgroundColor: "#F5F8F2",
+      borderRadius: "8px",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    },
+    column1: {
+      gridArea: "column1",
+      padding: "20px",
+      backgroundColor: "#FFFFFF",
+      borderRadius: "8px",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    },
+    column2: {
+      gridArea: "column2",
+      padding: "20px",
+      backgroundColor: "#FFFFFF",
+      borderRadius: "8px",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    },
+    column3: {
+      gridArea: "column3",
+      padding: "20px",
+      backgroundColor: "#FFFFFF",
       borderRadius: "8px",
       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
     },
@@ -315,7 +320,7 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
       textAlign: "center",
       marginBottom: "20px",
       color: "#333",
-      gridColumn: "span 2",
+      fontWeight:"bold",
     },
     formGroup: {
       marginBottom: "15px",
@@ -345,8 +350,8 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
       fontSize: "14px",
       color: "#666",
       flexDirection: "column",
-      gridColumn: "span 2",
-      overflow: "hidden", // Prevents image overflow
+      // gridColumn: "span 3",
+      // overflow: "hidden", // Prevents image overflow
     },
     imagePreviewContainer: {
       display: "flex",
@@ -384,30 +389,22 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
   };
 
   return (
-    <div style={styles.formContainer}>
-      <h2 style={styles.title}>
-        {idProduct ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm"}
-      </h2>
-      <div style={styles.uploadContainer}>
-      <label>Ảnh sản phẩm</label>
-      <input type="file" accept="image/*" multiple onChange={handleImageChange} />
-      {formData.productImage && formData.productImage.length > 0 && (
-        <div style={styles.imagePreviewContainer}>
-          {formData.productImage.map((image, index) => (
-            <div key={index}>
-              {image && image instanceof File && (
-                <img
-                  src={URL.createObjectURL(image)}
-                  alt={`product-image-${index}`}
-                  style={styles.imagePreview}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-      {errors.productImage && <p style={{ color: "red" }}>{errors.productImage}</p>}
-    </div>
+    <>
+      <div style={styles.formContainer}>
+      <ToastContainer
+        position="bottom-left" // Hiển thị thông báo ở góc dưới bên trái
+        autoClose={3000} // Thời gian tự động đóng (ms)
+        hideProgressBar={false} // Hiển thị thanh tiến trình
+        newestOnTop={false} // Thông báo mới nhất không hiển thị trên cùng
+        closeOnClick // Đóng thông báo khi click
+        rtl={false} // Không dùng chế độ RTL
+        pauseOnFocusLoss // Tạm dừng khi mất tiêu điểm
+        draggable // Có thể kéo thông báo
+        pauseOnHover // Tạm dừng khi hover vào thông báo
+      />
+      {/* column1 */}
+      <div style={styles.column1}>
+        <h3 style={styles.title}>Thông tin sản phẩm</h3>
       <div style={styles.formGroup}>
         <label style={styles.label}>Tên Sản Phẩm *</label>
         <input
@@ -490,8 +487,82 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
           <p style={{ color: "red" }}>{errors.qualityCheck}</p>
         )}
       </div>
+      <div style={styles.formGroup}>
+        <label style={styles.label}>Loại Sản Phẩm *</label>
+        <select
+          name="category"
+          value={selectedCategory}
+          onChange={handleCategoryChange}
+          style={styles.input}
+        >
+          <option value="">-- Chọn loại sản phẩm --</option>
+          {categories.map((category) => (
+            <option key={category.idCategory} value={category.idCategory}>
+              {category.nameCategory}
+            </option>
+          ))}
+        </select>
+        {errors.category && <p style={{ color: "red" }}>{errors.category}</p>}
+      </div>
+      <div style={styles.formGroup}>
+        <label style={styles.label}>Nhóm Sản Phẩm *</label>
+        <select
+          name="idSubcategory"
+          value={formData.idSubcategory}
+          onChange={handleChange}
+          style={styles.input}
+          disabled={!selectedCategory} // Disable khi chưa chọn category
+        >
+          <option value="">-- Chọn nhóm sản phẩm --</option>
+          {categories
+            .find(
+              (category) => category.idCategory === Number(selectedCategory)
+            )
+            ?.subcategoriesResponses.map((subcategory) => (
+              <option
+                key={subcategory.idSubcategory}
+                value={subcategory.idSubcategory}
+              >
+                {subcategory.nameSubcategory}
+              </option>
+            ))}
+        </select>
+        {errors.idSubcategory && (
+          <p style={{ color: "red" }}>{errors.idSubcategory}</p>
+        )}
+      </div>
+      </div>
 
-      {/* Address */}
+      { /* column2*/}
+      <div style={styles.column2}>
+      <h3 style={styles.title}>Tải ảnh sản phẩm</h3>
+
+      <div style={styles.uploadContainer}>
+      <label>Ảnh sản phẩm</label>
+      <input type="file" accept="image/*" multiple onChange={handleImageChange} />
+      {formData.productImage && formData.productImage.length > 0 && (
+        <div style={styles.imagePreviewContainer}>
+          {formData.productImage.map((image, index) => (
+            <div key={index}>
+              {image && image instanceof File && (
+                <img
+                  src={URL.createObjectURL(image)}
+                  alt={`product-image-${index}`}
+                  style={styles.imagePreview}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {errors.productImage && <p style={{ color: "red" }}>{errors.productImage}</p>}
+    </div>    
+      </div>
+
+      {/* column3 */}
+      <div style={styles.column3}>
+      <h3 style={styles.title}>Thông tin và địa chỉ</h3>
+
       <div style={styles.formGroup}>
         <SellectAddress
           type="province"
@@ -550,51 +621,6 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
           <p style={{ color: "red" }}>{errors.specificAddress}</p>
         )}
       </div>
-
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Loại Sản Phẩm *</label>
-        <select
-          name="category"
-          value={selectedCategory}
-          onChange={handleCategoryChange}
-          style={styles.input}
-        >
-          <option value="">-- Chọn loại sản phẩm --</option>
-          {categories.map((category) => (
-            <option key={category.idCategory} value={category.idCategory}>
-              {category.nameCategory}
-            </option>
-          ))}
-        </select>
-        {errors.category && <p style={{ color: "red" }}>{errors.category}</p>}
-      </div>
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Nhóm Sản Phẩm *</label>
-        <select
-          name="idSubcategory"
-          value={formData.idSubcategory}
-          onChange={handleChange}
-          style={styles.input}
-          disabled={!selectedCategory} // Disable khi chưa chọn category
-        >
-          <option value="">-- Chọn nhóm sản phẩm --</option>
-          {categories
-            .find(
-              (category) => category.idCategory === Number(selectedCategory)
-            )
-            ?.subcategoriesResponses.map((subcategory) => (
-              <option
-                key={subcategory.idSubcategory}
-                value={subcategory.idSubcategory}
-              >
-                {subcategory.nameSubcategory}
-              </option>
-            ))}
-        </select>
-        {errors.idSubcategory && (
-          <p style={{ color: "red" }}>{errors.idSubcategory}</p>
-        )}
-      </div>
       <input
         type="text"
         readOnly
@@ -602,6 +628,8 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
         value={address}
         style={styles.addressForm}
       />
+      </div>
+      
       <button type="submit" style={styles.submitButton} onClick={handleSubmit}>
         {idProduct ? "Cập nhật sản phẩm" : "Thêm sản phẩm"}
       </button>
@@ -613,6 +641,7 @@ const FarmerProductForm = ({ initialData = {}, onSave }) => {
         Quay lại
       </Link>
     </div>
+    </>
   );
 };
 

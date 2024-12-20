@@ -29,14 +29,15 @@ class UserService {
     return axios.post(SIGNUP_API_BASE_URL, userData, config);
   }
 
-  updateUserInfo(token, userData) {
+  updateUserInfo(token, formData) {
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
       },
     };
   
-    return axios.post(USER_API_BASE_URL + "/update", userData, config);
+    return axios.post(USER_API_BASE_URL + "/update", formData, config);
   }
   
   // Method to get user role
@@ -59,6 +60,15 @@ class UserService {
 
     return axios.get(USER_API_BASE_URL + "/get/all", config);
   }
+
+  getDashboardHousehold(token) {
+    const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+    return axios.get(`https://tams.azurewebsites.net/api/dashboard/household`, config);
+}
 }
 
 export default new UserService();

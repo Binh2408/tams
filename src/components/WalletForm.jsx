@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import WalletHouse from "../services/WalletHouse"; // Import WalletHouse
 import { useNavigate } from "react-router-dom"; // Import useNavigate để điều hướng
+import { toast, ToastContainer } from "react-toastify"; // Import react-toastify
+import "react-toastify/dist/ReactToastify.css"; // Import styles for toast notifications
 
 const WalletForm = () => {
   const [formData, setFormData] = useState({
@@ -36,11 +38,11 @@ const WalletForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault(); // Ngăn form submit mặc định
     const token = localStorage.getItem("token"); // Lấy token nếu cần
-  
+
     try {
       // Gọi API thêm ví bằng WalletHouse
       await WalletHouse.addWallet(token, formData);
-  
+
       setResponseMessage("Ví đã được tạo thành công!"); // Thông báo thành công
       setIsSuccess(true); // Cập nhật trạng thái là thành công
       setFormData({
@@ -48,16 +50,15 @@ const WalletForm = () => {
         bankName: "",
         registrationLocation: "",
       }); // Reset form sau khi thành công
-  
+
       // Hiển thị thông báo alert thành công
-      alert("Ví đã được tạo thành công!");
-  
+      toast.success("Ví đã được tạo thành công!");
+
       // Tải lại thông tin ví sau khi tạo ví
       loadWalletInfo();
-  
-      // Chuyển hướng người dùng về trang quản lý sản phẩm
-      navigate("/wallet"); // Điều hướng đến trang quản lý sản phẩm
-  
+
+      // Chuyển hướng người dùng về trang quản lý ví
+      navigate("/wallet"); // Điều hướng đến trang quản lý ví
     } catch (error) {
       if (error.response) {
         setResponseMessage(error.response.data); // Hiển thị thông báo lỗi từ server
@@ -65,15 +66,25 @@ const WalletForm = () => {
         setResponseMessage("Đã có lỗi xảy ra khi tạo ví.");
       }
       setIsSuccess(false); // Cập nhật trạng thái là lỗi
-  
+
       // Hiển thị thông báo alert lỗi
-      alert("Đã có lỗi xảy ra khi tạo ví. Vui lòng thử lại.");
+      toast.error("Đã có lỗi xảy ra khi tạo ví. Vui lòng thử lại.");
     }
   };
-  
 
   return (
     <div style={styles.container}>
+      <ToastContainer
+        position="bottom-left" // Hiển thị thông báo ở góc dưới bên trái
+        autoClose={3000} // Thời gian tự động đóng (ms)
+        hideProgressBar={false} // Hiển thị thanh tiến trình
+        newestOnTop={false} // Thông báo mới nhất không hiển thị trên cùng
+        closeOnClick // Đóng thông báo khi click
+        rtl={false} // Không dùng chế độ RTL
+        pauseOnFocusLoss // Tạm dừng khi mất tiêu điểm
+        draggable // Có thể kéo thông báo
+        pauseOnHover // Tạm dừng khi hover vào thông báo
+      />
       <h2 style={styles.header}>Ví cá nhân</h2>
       <form onSubmit={handleSubmit} style={styles.form}>
         <label style={styles.label}>Số tài khoản ngân hàng:</label>
@@ -94,7 +105,7 @@ const WalletForm = () => {
           style={styles.input}
           required
         />
-        <label style={styles.label}>Nơi đăng kí:</label>
+        <label style={styles.label}>Nơi đăng ký:</label>
         <input
           type="text"
           name="registrationLocation"
@@ -106,10 +117,28 @@ const WalletForm = () => {
         <button type="submit" style={styles.button}>Tạo ví</button>
       </form>
 
-      
-
       {/* Hiển thị thông báo sau khi tạo ví */}
-     
+      {responseMessage && (
+        <p
+          style={isSuccess ? styles.successMessage : styles.message}
+        >
+          {responseMessage}
+        </p>
+      )}
+
+      {/* Hiển thị thông tin ví */}
+      {walletInfo.length > 0 && (
+        <div style={styles.walletInfoContainer}>
+          <h3 style={styles.walletInfoHeader}>Thông tin ví</h3>
+          {walletInfo.map((wallet, index) => (
+            <div key={index} style={styles.walletInfoItem}>
+              <p><strong>Số tài khoản:</strong> {wallet.bankAccountNumber}</p>
+              <p><strong>Ngân hàng:</strong> {wallet.bankName}</p>
+              <p><strong>Nơi đăng ký:</strong> {wallet.registrationLocation}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

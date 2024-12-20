@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import UserService from "../../services/UserService";
+import {toast, ToastContainer } from "react-toastify"; // Import react-toastify
+import "react-toastify/dist/ReactToastify.css"; // Import styles for toast notifications
 
 const UserForm = ({ user, onClose, onRefresh }) => {
   const [formData, setFormData] = useState({
     fullName: user?.fullName || "",
     email: user?.email || "",
-    role: user?.role || 2, // Default role is "Người mua"
+    password: "",
+    confirmPassword: "",
   });
 
   const [token] = useState(localStorage.getItem("token"));
@@ -15,7 +18,8 @@ const UserForm = ({ user, onClose, onRefresh }) => {
       setFormData({
         fullName: user.fullName || "",
         email: user.email || "",
-        role: user.role || 2,
+        password: "",
+        confirmPassword: "",
       });
     }
   }, [user]);
@@ -26,38 +30,47 @@ const UserForm = ({ user, onClose, onRefresh }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
+    // Kiểm tra mật khẩu và xác nhận mật khẩu
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Mật khẩu và xác nhận mật khẩu không khớp!");
+      return;
+    }
+
     let userData = {
       fullname: formData.fullName,
-      role: formData.role,
+      email: formData.email,
+      password: formData.password,
+      role: "3", // Luôn gán ROLE_ADMIN khi tạo người dùng
     };
-  
-    if (!formData.id) {
-      userData.email = formData.email; // Chỉ thêm email khi tạo mới người dùng
-    }
-  
+
     try {
-      // Chỉ gọi API signup khi không có id
       await UserService.signup(token, userData);
 
-      onRefresh();  // Cập nhật lại danh sách người dùng
-      onClose();    // Đóng form
-      alert("Lưu thành công!");
+      onRefresh(); // Cập nhật danh sách người dùng
+      onClose(); // Đóng form
+      toast.success("Thêm người dùng thành công!");
     } catch (error) {
-      console.error("Lỗi khi lưu thông tin người dùng:", error);
-      alert("Không thể lưu thông tin!");
+      console.error("Lỗi khi thêm người dùng:", error);
+      toast.error("Không thể thêm người dùng!");
     }
-  };
-
-  const roleOptions = {
-    1: "Người bán",
-    2: "Người mua",
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded shadow-lg w-96">
-        <h2 className="text-xl font-bold mb-4">Thêm người dùng</h2>
+      <ToastContainer
+        position="bottom-left" // Hiển thị thông báo ở góc dưới bên trái
+        autoClose={3000} // Thời gian tự động đóng (ms)
+        hideProgressBar={false} // Hiển thị thanh tiến trình
+        newestOnTop={false} // Thông báo mới nhất không hiển thị trên cùng
+        closeOnClick // Đóng thông báo khi click
+        rtl={false} // Không dùng chế độ RTL
+        pauseOnFocusLoss // Tạm dừng khi mất tiêu điểm
+        draggable // Có thể kéo thông báo
+        pauseOnHover // Tạm dừng khi hover vào thông báo
+      />
+        <h2 className="text-xl font-bold mb-4">Thêm Admin</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700">Tên</label>
@@ -71,7 +84,6 @@ const UserForm = ({ user, onClose, onRefresh }) => {
             />
           </div>
 
-          {/* Form dành cho tạo mới người dùng */}
           <div className="mb-4">
             <label className="block text-gray-700">Email</label>
             <input
@@ -85,23 +97,28 @@ const UserForm = ({ user, onClose, onRefresh }) => {
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700">Vai trò</label>
-            <select
-              name="role"
-              value={formData.role}
+            <label className="block text-gray-700">Mật khẩu</label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
               onChange={handleChange}
               className="w-full px-4 py-2 border rounded"
-            >
-              {Object.entries(roleOptions).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value}
-                </option>
-              ))}
-            </select>
+              required
+            />
           </div>
 
-          {/* Các trường thông tin cho cả tạo mới người dùng */}
-          
+          <div className="mb-4">
+            <label className="block text-gray-700">Xác nhận mật khẩu</label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border rounded"
+              required
+            />
+          </div>
 
           <div className="flex justify-between">
             <button
@@ -115,7 +132,7 @@ const UserForm = ({ user, onClose, onRefresh }) => {
               type="submit"
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
             >
-              Lưu
+              Thêm
             </button>
           </div>
         </form>
